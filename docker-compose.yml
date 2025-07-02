@@ -1,0 +1,52 @@
+services:
+  fast_backend_api:
+    build:
+      context: .
+      dockerfile: deployment/image/Dockerfile
+    ports:
+      - 5002:5002
+    env_file:
+      - .env.${DEPLOY_ENV}
+    restart: unless-stopped
+    volumes:
+      - .:/
+
+  redis:
+    image: redis/redis-stack-server:latest
+    restart: unless-stopped
+    ports:
+      - 6377:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+    env_file:
+      - .env.${DEPLOY_ENV}
+    environment:
+      REDIS_ARGS: "--requirepass ${REDIS_PASSWORD} --appendonly yes"
+    volumes:
+      - redis:/data
+
+  redis_cleanup:
+    image: redis:latest
+    command: ["redis-cli", "-h", "redis", "-a", "${REDIS_PASSWORD}", "FLUSHALL"]
+    depends_on:
+      - redis
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+  database:
+    image: postgres:latest
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    env_file:
+      - .env.${DEPLOY_ENV}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  redis:
+  postgres_data:

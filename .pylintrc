@@ -1,0 +1,12 @@
+[MAIN]
+
+disable=
+    missing-function-docstring,
+    redefined-builtin,
+    too-few-public-methods,
+    missing-class-docstring,
+    missing-module-docstring,
+    missing-class-docstring,
+    broad-exception-raised,
+    import-error,
+    consider-using-f-string

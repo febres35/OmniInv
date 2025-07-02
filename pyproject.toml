@@ -1,0 +1,50 @@
+[tool.poetry]
+name = "backend-api"
+version = "0.1.0"
+description = "API for managing and processing data"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.30.1"}
+pydantic = {extras = ["email"], version = "^2.10.3"}
+sqlalchemy = "^2.0.31"
+sqlmodel = "^0.0.19"
+flake8 = "^7.1.0"
+black = "^24.4.2"
+pyright = "^1.1.371"
+fastapi-jwt = {extras = ["authlib"], version = "^0.3.0"}
+passlib = "^1.7.4"
+pyjwt = "^2.8.0"
+pydantic-settings = "^2.6.0"
+psycopg2-binary = "^2.9.10"
+asyncpg = "^0.30.0"
+pylint = "^3.3.1"
+autopep8 = "^2.3.1"
+pytest = "^8.3.3"
+coverage = "^7.6.8"
+redis = "^5.2.0"
+fastapi-cache2 = "^0.2.2"
+python-multipart = "^0.0.19"
+qrcode = {extras = ["pil"], version = "^8.0"}
+pandas = "^2.2.3"
+openpyxl = "^3.1.5"
+xlsxwriter = "^3.2.0"
+httpx = "^0.28.1"
+trio = "^0.27.0"
+anyio = {extras = ["trio"], version = "^4.7.0"}
+pytest-timeout = "^2.3.1"
+sse-starlette = "^2.2.1"
+aiofiles = "^24.1.0"
+bcrypt = "^4.0.1"
+cryptography = "^39.0.1"  
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+fixtup = "^0.1.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
