@@ -8,7 +8,6 @@ from ._credential import Credential
 from ._user_group import UserGroup
 from ._permissions import Permissions
 from ._permissions_level import PermissionsLevel
-from ._profile_rol import ProfileRol
 
 
 __all__ = [
@@ -20,6 +19,6 @@ __all__ = [
     "Permissions",
     "PermissionsLevel",
     "Credential",
-    "Group",
+    "UserGroup",
     "ProfileRol",
 ]

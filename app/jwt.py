@@ -26,7 +26,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     sub: str
     profile: int
-    partner_id: int
+    group_id: int
     user_id: int
 
 

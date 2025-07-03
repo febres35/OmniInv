@@ -1,4 +1,3 @@
-import hashlib
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,17 +12,16 @@ from app.jwt import (
     verify_password,
 )
 from app.models import Profile
-from app.models import ProfileType
-from app.models import User, Login
+from app.models import User, AuthUser, Credential
 from app.models._partner import Partner
-from app.db import session
+from app.core import session
 from app.constans import const_status
 
 
 class UserSchemaBase(BaseModel):
     id: str | None = None
     name: str | None = None
-    login: str | None = None
+    username: str | None = None
 
 
 class TokenResponse(BaseModel):
@@ -36,17 +34,17 @@ class Session(BaseModel):
     full_name: str
     partner_name: str | None
     partner_id: int | None
-    role: str
+    profile: str
 
 
 class UserLogin(BaseModel):
     full_name: str
-    login: str
+    username: str
     password: str
     status_id: int
     profile_id: int
     partner_id: int | None
-    login_id: int
+    auth_user_id: int
     user_id: int
 
 
@@ -105,7 +103,7 @@ class AuthService:
             sub=str(user.login_id),
             profile=user.profile_id,
             user_id=user.user_id,
-            partner_id=user.partner_id,
+            group_id=user.group_id,
         )
 
         access_token = create_access_token(subject.model_dump())
@@ -122,19 +120,18 @@ class AuthService:
 
         get_user_stmt = (
             select(
-                (User.name + " " + User.lastname).label("full_name"),
-                ProfileType.code.label("role"),
+                (User.firstname + " " + User.lastname).label("full_name"),
+                Profile.name.label("profile"),
                 Partner.name.label("partner_name"),
                 Partner.id.label("partner_id"),
             )
             .select_from(User)
-            .join(Login, Login.user_id == User.id)
-            .join(Partner, Partner.id == Login.partner_id)
-            .join(Profile, Profile.id == Login.profile_id)
-            .join(ProfileType, ProfileType.id == Profile.profile_type_id)
+            .join(AuthUser, AuthUser.user_id == User.id)
+            .join(Partner, Partner.id == AuthUser.partner_id)
+            .join(Profile, Profile.id == AuthUser.profile_id)
             .where(
-                Login.id == int(current_user_id),
-                Login.status_id == const_status.HABILITADO.value,
+                AuthUser.id == int(current_user_id),
+                AuthUser.status_id == const_status.HABILITADO.value,
             )
         )
 
@@ -166,17 +163,16 @@ async def get_user_or_none(username) -> UserLogin | None:
 
     get_user_stmt = (
         select(
-            Login.partner_id,
-            Login.profile_id,
-            Login.status_id,
-            (User.name + " " + User.lastname).label("full_name"),
-            Login.password,
-            Login.login,
-            Login.id.label("login_id"),
+            AuthUser.profile_id,
+            AuthUser.status_id,
+            (User.firstname + " " + User.lastname).label("full_name"),
+            Credential.password,
+            AuthUser.username,
+            AuthUser.id.label("auth_user_id"),
             User.id.label("user_id"),
         )
-        .join(User, User.id == Login.user_id)
-        .where(Login.login == username)
+        .join(User, User.id == AuthUser.user_id)
+        .where(AuthUser.username == username)
     )
     result = (await sess.execute(get_user_stmt)).one_or_none()
     await sess.close()
@@ -192,17 +188,17 @@ async def get_user_by_id(id: str) -> UserLogin | None:
 
     get_user_stmt = (
         select(
-            Login.partner_id,
-            Login.profile_id,
-            Login.status_id,
-            (User.name + " " + User.lastname).label("full_name"),
-            Login.password,
-            Login.login,
-            Login.id.label("login_id"),
+            AuthUser.partner_id,
+            AuthUser.profile_id,
+            AuthUser.status_id,
+            (User.firstname + " " + User.lastname).label("full_name"),
+            Credential.password,
+            AuthUser.username,
+            AuthUser.id.label("login_id"),
             User.id.label("user_id"),
         )
-        .join(User, User.id == Login.user_id)
-        .where(Login.id == int(id), Login.status_id == 1)
+        .join(User, User.id == AuthUser.user_id)
+        .where(AuthUser.id == int(id), AuthUser.status_id == 1)
     )
 
     result = (await sess.execute(get_user_stmt)).one_or_none()
