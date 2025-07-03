@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from app.dependencies import DBSessionDep
 from app.jwt import TokenData, get_current_user, oauth2_scheme
-from app.routes.auth.auth_service import AuthService, Session
+from app.api.auth.auth_service import AuthService, Session
 
 authentication_router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -56,3 +56,16 @@ async def session(
     return await service.get_session(
         current_user_id=current_user.sub,
     )
+
+
+@authentication_router.get("/logout")
+async def logout(
+    sess: DBSessionDep,
+    refresh_token: str = Depends(oauth2_scheme),
+):
+    """
+    Logout a user
+    """
+
+    service = AuthService(sess)
+    return service.logout(refresh_token=refresh_token)

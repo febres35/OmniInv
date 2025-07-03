@@ -16,7 +16,7 @@ class AuthUser(Base):
     user_id = Column(Integer, ForeignKey("public.users.id"), nullable=False)
     username = Column(String(32), nullable=False, unique=True)
     profile_id = Column(Integer, ForeignKey("profile.id"), nullable=False)
-    group_id = Column(Integer, ForeignKey("group.id"), nullable=True)
+    group_id = Column(Integer, ForeignKey("user_groups.id"), nullable=True)
     status_id = Column(Integer, ForeignKey("status.id"), nullable=False, default=2)
     updated_at = Column(
         DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP")

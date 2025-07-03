@@ -33,7 +33,7 @@ from .auth_user import (
     AuthUser,
     UserReports,
     Credential,
-    Group,
+    UserGroup,
     Permissions,
     PermissionsLevel,
 )
@@ -46,7 +46,7 @@ __all__ = [
     "AuthUser",
     "UserReports",
     "Credential",
-    "Group",
+    "UserGroup",
     "Permissions",
     "PermissionsLevel",
     "Partner",

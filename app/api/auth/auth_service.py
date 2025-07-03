@@ -148,6 +148,15 @@ class AuthService:
         except HTTPException as ex:
             return {"message": str(ex), "error": " Unauthorized"}, 401
 
+    async def logout(self, refresh_token: str):
+        """
+        Invalidate the refresh token (logout).
+        This is a placeholder as JWTs are stateless; implement token blacklisting if needed.
+        """
+        # If using a token blacklist, add the refresh_token to the blacklist here.
+        # For now, just return a success message.
+        return {"message": "Successfully logged out"}
+
 
 async def get_user_or_none(username) -> UserLogin | None:
     sess = await session()

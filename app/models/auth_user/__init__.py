@@ -5,7 +5,7 @@ from ._user_auth import AuthUser
 from ._user_reports import UserReports
 from ._profile_rol import ProfileRol
 from ._credential import Credential
-from ._group import Group
+from ._user_group import UserGroup
 from ._permissions import Permissions
 from ._permissions_level import PermissionsLevel
 from ._profile_rol import ProfileRol
