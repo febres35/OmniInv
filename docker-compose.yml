@@ -1,22 +1,28 @@
 services:
-  database:
-    image: postgres:17
-    container_name: database
-    restart: unless-stopped
-    env_file:
-      - .env.${DEPLOY_ENV}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./sql/database.sql:/docker-entrypoint-initdb.d/database.sql
-    networks:
-      - app_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # database:
+  #   image: postgres:17
+  #   container_name: database
+  #   restart: unless-stopped
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - POSTGRES_DB=${DB_NAME}
+  #     - POSTGRES_USER=${DB_USER}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #     - POSTGRES_HOST=${DB_HOST}
+  #     - POSTGRES_PORT=${DB_PORT}
+  #   ports:
+  #     - "${DB_PORT}:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./sql/database.sql:/docker-entrypoint-initdb.d/database.sql
+  #   networks:
+  #     - app_network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   fast_backend_api:
     build:
@@ -25,14 +31,14 @@ services:
     ports:
       - 5002:5002
     env_file:
-      - .env.${DEPLOY_ENV}
+      - .env
     restart: unless-stopped
     networks:
       - app_network
-    depends_on:
-      - database
+    # depends_on:
+    #   - database
     volumes:
-      - .:/
+      - .:/app
 
   redis:
     image: redis/redis-stack-server:latest
@@ -42,7 +48,7 @@ services:
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
     env_file:
-      - .env.${DEPLOY_ENV}
+      - .env
     environment:
       REDIS_ARGS: "--requirepass ${REDIS_PASSWORD} --appendonly yes"
     volumes:
@@ -62,7 +68,7 @@ services:
 
 volumes:
   redis:
-  postgres_data:
+    # postgres_data:
     driver: local
 
 networks:

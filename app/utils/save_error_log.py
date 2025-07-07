@@ -2,7 +2,7 @@ from fastapi import Request
 from sqlalchemy import insert
 from sqlalchemy.exc import SQLAlchemyError
 from app.models._error_logs import ErrorLogs
-from app.db import session
+from app.core import session
 
 
 async def save_sql_error_log(request: Request, port: str, exc: SQLAlchemyError) -> str:

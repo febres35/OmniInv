@@ -12,10 +12,10 @@ from app.jwt import (
     verify_password,
 )
 from app.models import Profile
-from app.models import User, AuthUser, Credential
-from app.models._partner import Partner
+from app.models import User, AuthUser, Credential, UserGroup, Rol, ProfileRol
 from app.core import session
 from app.constans import const_status
+from sqlalchemy import func
 
 
 class UserSchemaBase(BaseModel):
@@ -24,17 +24,27 @@ class UserSchemaBase(BaseModel):
     username: str | None = None
 
 
+class Session(BaseModel):
+    full_name: str
+    group_name: str | None
+    group_id: int | None
+    rols: list
+
+
+class RolSchema(BaseModel):
+    id: int
+    name: str
+    path_name: str
+    icon: str
+
+
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     username: str | None = None
-
-
-class Session(BaseModel):
-    full_name: str
-    partner_name: str | None
-    partner_id: int | None
-    profile: str
+    group: str
+    Profile: str
+    roles: list[RolSchema]
 
 
 class UserLogin(BaseModel):
@@ -42,10 +52,12 @@ class UserLogin(BaseModel):
     username: str
     password: str
     status_id: int
-    profile_id: int
-    partner_id: int | None
+    group_id: int
     auth_user_id: int
     user_id: int
+    group: str
+    profile_id: int
+    roles: list[RolSchema]
 
 
 class AuthService:
@@ -53,7 +65,7 @@ class AuthService:
     def __init__(self, sess: AsyncSession | None = None):
         self.sess = sess
 
-    async def autenticate(self, password, username) -> TokenResponse:
+    async def authenticate(self, password, username) -> TokenResponse:
         """Login user"""
         try:
             user = await get_user_or_none(username)
@@ -100,7 +112,7 @@ class AuthService:
             raise HTTPException(status_code=401, detail="User does not exist")
 
         subject = TokenData(
-            sub=str(user.login_id),
+            sub=str(user.auth_user_id),
             profile=user.profile_id,
             user_id=user.user_id,
             group_id=user.group_id,
@@ -122,12 +134,12 @@ class AuthService:
             select(
                 (User.firstname + " " + User.lastname).label("full_name"),
                 Profile.name.label("profile"),
-                Partner.name.label("partner_name"),
-                Partner.id.label("partner_id"),
+                UserGroup.name.label("group_name"),
+                UserGroup.id.label("group_id"),
             )
             .select_from(User)
             .join(AuthUser, AuthUser.user_id == User.id)
-            .join(Partner, Partner.id == AuthUser.partner_id)
+            .join(UserGroup, UserGroup.id == AuthUser.group_id)
             .join(Profile, Profile.id == AuthUser.profile_id)
             .where(
                 AuthUser.id == int(current_user_id),
@@ -156,6 +168,7 @@ class AuthService:
 
 
 async def get_user_or_none(username) -> UserLogin | None:
+
     sess = await session()
 
     if sess is None:
@@ -163,18 +176,57 @@ async def get_user_or_none(username) -> UserLogin | None:
 
     get_user_stmt = (
         select(
+            AuthUser.group_id,
             AuthUser.profile_id,
             AuthUser.status_id,
             (User.firstname + " " + User.lastname).label("full_name"),
             Credential.password,
             AuthUser.username,
-            AuthUser.id.label("auth_user_id"),
+            AuthUser.id.label("login_id"),
             User.id.label("user_id"),
         )
         .join(User, User.id == AuthUser.user_id)
-        .where(AuthUser.username == username)
+        .where(AuthUser.username == username, AuthUser.status_id == 1)
+    ).subquery()
+
+    user_stmt_with_rol = (
+        select(
+            get_user_stmt.c.group_id,
+            get_user_stmt.c.profile_id,
+            get_user_stmt.c.status_id,
+            get_user_stmt.c.full_name,
+            get_user_stmt.c.password,
+            get_user_stmt.c.username,
+            get_user_stmt.c.login_id,
+            get_user_stmt.c.user_id,
+            func.json_agg(
+                func.json_build_object(
+                    "id",
+                    Rol.id,
+                    "name",
+                    Rol.name,
+                    "path_name",
+                    Rol.path_name,
+                    "icon",
+                    Rol.icon,
+                )
+            ).label("rols"),
+        )
+        .join(ProfileRol, get_user_stmt.c.profile_id == ProfileRol.profile_id)
+        .join(Rol, ProfileRol.role_id == Rol.id)
+        .group_by(
+            get_user_stmt.c.group_id,
+            get_user_stmt.c.profile_id,
+            get_user_stmt.c.status_id,
+            get_user_stmt.c.full_name,
+            get_user_stmt.c.password,
+            get_user_stmt.c.username,
+            get_user_stmt.c.login_id,
+            get_user_stmt.c.user_id,
+        )
     )
-    result = (await sess.execute(get_user_stmt)).one_or_none()
+
+    result = (await sess.execute(user_stmt_with_rol)).one_or_none()
     await sess.close()
     return result
 
@@ -188,7 +240,7 @@ async def get_user_by_id(id: str) -> UserLogin | None:
 
     get_user_stmt = (
         select(
-            AuthUser.partner_id,
+            AuthUser.group_id,
             AuthUser.profile_id,
             AuthUser.status_id,
             (User.firstname + " " + User.lastname).label("full_name"),
@@ -199,9 +251,46 @@ async def get_user_by_id(id: str) -> UserLogin | None:
         )
         .join(User, User.id == AuthUser.user_id)
         .where(AuthUser.id == int(id), AuthUser.status_id == 1)
+    ).subquery()
+
+    user_stmt_with_rol = (
+        select(
+            get_user_stmt.c.group_id,
+            get_user_stmt.c.profile_id,
+            get_user_stmt.c.status_id,
+            get_user_stmt.c.full_name,
+            get_user_stmt.c.password,
+            get_user_stmt.c.username,
+            get_user_stmt.c.login_id,
+            get_user_stmt.c.user_id,
+            func.json_agg(
+                func.json_build_object(
+                    "id",
+                    Rol.id,
+                    "name",
+                    Rol.name,
+                    "path_name",
+                    Rol.path_name,
+                    "icon",
+                    Rol.icon,
+                )
+            ).label("rols"),
+        )
+        .join(ProfileRol, get_user_stmt.c.profile_id == ProfileRol.profile_id)
+        .join(Rol, ProfileRol.role_id == Rol.id)
+        .group_by(
+            get_user_stmt.c.group_id,
+            get_user_stmt.c.profile_id,
+            get_user_stmt.c.status_id,
+            get_user_stmt.c.full_name,
+            get_user_stmt.c.password,
+            get_user_stmt.c.username,
+            get_user_stmt.c.login_id,
+            get_user_stmt.c.user_id,
+        )
     )
 
-    result = (await sess.execute(get_user_stmt)).one_or_none()
+    result = (await sess.execute(user_stmt_with_rol)).one_or_none()
     await sess.close()
     return result
 
@@ -209,13 +298,13 @@ async def get_user_by_id(id: str) -> UserLogin | None:
 def set_crendentials(user: UserLogin):
 
     subject = TokenData(
-        sub=str(user.login_id),
+        sub=str(user.auth_user_id),
         profile=user.profile_id,
-        partner_id=user.partner_id,
+        group_id=user.group_id,
         user_id=user.user_id,
     )
 
-    refresh_subject = RefreshTokenData(sub=str(user.login_id))
+    refresh_subject = RefreshTokenData(sub=str(user.auth_user_id))
 
     access_token = create_access_token(subject.model_dump())
     refresh_token = create_refresh_token(refresh_subject.model_dump())

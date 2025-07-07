@@ -19,7 +19,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ):
     service = AuthService()
-    response = await service.autenticate(
+    response = await service.authenticate(
         username=form_data.username, password=form_data.password
     )
 

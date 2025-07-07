@@ -17,7 +17,7 @@ from app.jwt import ALGORITHM, SECRET_KEY
 from app.utils.save_error_log import save_sql_error_log
 
 from .utils.key_builder import key_builder
-from .routes import main_router
+from .api import main_router
 from .middlewares import middleware
 
 DEPLOY_ENV = os.getenv("DEPLOY_ENV")

@@ -5,18 +5,18 @@ RUN apt-get update && \
     ln -fs /usr/share/zoneinfo/America/Caracas /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
 
-ADD . /inv_ceramica
+ADD . /app
 
-WORKDIR /inv_ceramica
+WORKDIR /app
 
-COPY . /inv_ceramica
+COPY . /app
 
 ADD deployment/secrets/.  /root/.ssh
 
 RUN chmod 600 /root/.ssh -R
 
 
-ENV POETRY_VIRTUALENVS_CREATE false
+ENV POETRY_VIRTUALENVS_CREATE=false
 RUN pip install --upgrade pip && pip install poetry pytest coverage
 
 EXPOSE 5002
