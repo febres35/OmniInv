@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from app.models.base import Base
 
 
@@ -15,3 +15,4 @@ class Rol(Base):
     path_name = Column(String(255), nullable=True, default="#")
     icon = Column(String(255), nullable=True)
     label = Column(String(255), nullable=True)
+    rol_parent = Column(Integer, ForeignKey("roles.id"), nullable=True)

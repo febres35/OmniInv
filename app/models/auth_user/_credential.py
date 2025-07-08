@@ -1,7 +1,6 @@
 # coding: utf-8
 from __future__ import absolute_import
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
-from sqlalchemy.orm import relationship
 from ..base import Base
 
 
@@ -15,8 +14,6 @@ class Credential(Base):
     update_at = Column(DateTime, nullable=False)
     failed_attempts = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, nullable=False, default=True)
-
-    user = relationship("AuthUser", back_populates="credentials")
 
     def __repr__(self):
         return f"{self.password}"

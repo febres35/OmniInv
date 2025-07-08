@@ -22,7 +22,5 @@ class UserGroup(Base):
     created_by = Column(Integer, ForeignKey("auth_user.id"), nullable=False)
     updated_by = Column(Integer, ForeignKey("auth_user.id"), nullable=False)
 
-    parent_group = relationship("Group", remote_side=[id], backref="subgroups")
-
     def __repr__(self):
         return f"{self.name}"

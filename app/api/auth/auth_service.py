@@ -42,8 +42,8 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     username: str | None = None
-    group: str
-    Profile: str
+    group: int
+    profile: int
     roles: list[RolSchema]
 
 
@@ -70,6 +70,9 @@ class AuthService:
         try:
             user = await get_user_or_none(username)
         except Exception as ex:
+            import logging
+
+            logging.info(str(ex))
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Unable to process the provided username format",
@@ -95,7 +98,10 @@ class AuthService:
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
-            username=user.full_name,
+            username=user.username,
+            group=user.group_id,  # Ensure user has this attribute
+            profile=user.profile_id,  # Ensure user has this attribute
+            roles=user.roles,  # Ensure user has this attribute
         )
 
     async def refresh_token(self, refresh_token: str) -> TokenResponse:
@@ -124,6 +130,10 @@ class AuthService:
             access_token=access_token,
             refresh_token="",
             token_type="bearer",
+            username=user.full_name,
+            group=user.group_id,  # Ensure user has this attribute
+            profile=user.profile_id,  # Ensure user has this attribute
+            roles=user.roles,  # Ensure user has this attribute
         )
 
     async def get_session(self, current_user_id: str):
@@ -182,10 +192,11 @@ async def get_user_or_none(username) -> UserLogin | None:
             (User.firstname + " " + User.lastname).label("full_name"),
             Credential.password,
             AuthUser.username,
-            AuthUser.id.label("login_id"),
+            AuthUser.id.label("auth_user_id"),
             User.id.label("user_id"),
         )
         .join(User, User.id == AuthUser.user_id)
+        .join(Credential, Credential.auth_user_id == AuthUser.user_id)
         .where(AuthUser.username == username, AuthUser.status_id == 1)
     ).subquery()
 
@@ -197,7 +208,7 @@ async def get_user_or_none(username) -> UserLogin | None:
             get_user_stmt.c.full_name,
             get_user_stmt.c.password,
             get_user_stmt.c.username,
-            get_user_stmt.c.login_id,
+            get_user_stmt.c.auth_user_id,
             get_user_stmt.c.user_id,
             func.json_agg(
                 func.json_build_object(
@@ -210,10 +221,10 @@ async def get_user_or_none(username) -> UserLogin | None:
                     "icon",
                     Rol.icon,
                 )
-            ).label("rols"),
+            ).label("roles"),
         )
         .join(ProfileRol, get_user_stmt.c.profile_id == ProfileRol.profile_id)
-        .join(Rol, ProfileRol.role_id == Rol.id)
+        .join(Rol, ProfileRol.rol_id == Rol.id)
         .group_by(
             get_user_stmt.c.group_id,
             get_user_stmt.c.profile_id,
@@ -221,13 +232,13 @@ async def get_user_or_none(username) -> UserLogin | None:
             get_user_stmt.c.full_name,
             get_user_stmt.c.password,
             get_user_stmt.c.username,
-            get_user_stmt.c.login_id,
+            get_user_stmt.c.auth_user_id,
             get_user_stmt.c.user_id,
         )
     )
-
     result = (await sess.execute(user_stmt_with_rol)).one_or_none()
     await sess.close()
+
     return result
 
 
@@ -246,10 +257,11 @@ async def get_user_by_id(id: str) -> UserLogin | None:
             (User.firstname + " " + User.lastname).label("full_name"),
             Credential.password,
             AuthUser.username,
-            AuthUser.id.label("login_id"),
+            AuthUser.id.label("auth_user_id"),
             User.id.label("user_id"),
         )
         .join(User, User.id == AuthUser.user_id)
+        .join(Credential, Credential.auth_user_id == AuthUser.user_id)
         .where(AuthUser.id == int(id), AuthUser.status_id == 1)
     ).subquery()
 
@@ -261,7 +273,7 @@ async def get_user_by_id(id: str) -> UserLogin | None:
             get_user_stmt.c.full_name,
             get_user_stmt.c.password,
             get_user_stmt.c.username,
-            get_user_stmt.c.login_id,
+            get_user_stmt.c.auth_user_id,
             get_user_stmt.c.user_id,
             func.json_agg(
                 func.json_build_object(
@@ -274,10 +286,10 @@ async def get_user_by_id(id: str) -> UserLogin | None:
                     "icon",
                     Rol.icon,
                 )
-            ).label("rols"),
+            ).label("roles"),
         )
         .join(ProfileRol, get_user_stmt.c.profile_id == ProfileRol.profile_id)
-        .join(Rol, ProfileRol.role_id == Rol.id)
+        .join(Rol, ProfileRol.rol_id == Rol.id)
         .group_by(
             get_user_stmt.c.group_id,
             get_user_stmt.c.profile_id,
@@ -285,7 +297,7 @@ async def get_user_by_id(id: str) -> UserLogin | None:
             get_user_stmt.c.full_name,
             get_user_stmt.c.password,
             get_user_stmt.c.username,
-            get_user_stmt.c.login_id,
+            get_user_stmt.c.auth_user_id,
             get_user_stmt.c.user_id,
         )
     )

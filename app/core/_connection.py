@@ -28,10 +28,10 @@ class ConnectionManager:
     async def _create_engine(self) -> AsyncEngine:
 
         # pylint: disable=consider-using-f-string
-        # connection_string = "postgresql+asyncpg://{}:{}@{}:{}/{}".format(
-        #     db_user, db_password, db_host, db_port, db_name
-        # )
-        connection_string = database_url
+        connection_string = "postgresql+asyncpg://{}:{}@{}:{}/{}".format(
+            db_user, db_password, db_host, db_port, db_name
+        )
+        # connection_string = database_url
 
         return create_async_engine(
             connection_string,
