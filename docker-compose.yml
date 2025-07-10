@@ -29,8 +29,8 @@ services:
       context: .
       dockerfile: deployment/image/Dockerfile
     container_name: backend_api
-    # ports:
-    #   - 5002:5002
+    ports:
+      - 5002:5002
     env_file:
       - .env
     restart: unless-stopped
