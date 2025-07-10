@@ -37,7 +37,6 @@ async def refresh(
     service = AuthService()
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token")
-    print(refresh_token)
     return await service.refresh_token(
         refresh_token=refresh_token,
     )
